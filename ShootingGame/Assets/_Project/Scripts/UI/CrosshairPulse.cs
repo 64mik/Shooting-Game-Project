@@ -3,7 +3,7 @@ using UnityEngine;
 public class CrosshairPulse : MonoBehaviour
 {
     [SerializeField] RectTransform dot;
-    [SerializeField] float pulseScale = 1.25f, recover = 12f;
+    [SerializeField] float pulseScale = 1.75f, recover = 12f;
     Vector3 baseScale;
     void Awake()
     {
@@ -21,3 +21,4 @@ public class CrosshairPulse : MonoBehaviour
     }
     
 }
+
