@@ -98,19 +98,21 @@ InitTestScene*.unity*
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
-# Unity (any project folder)
-**/Library/
-**/Temp/
-**/Logs/
-**/Obj/
-**/Build/
-**/Builds/
-**/UserSettings/
-**/.vs/
-**/.idea/
-
-# C# solution files
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+[Mm]emoryCaptures/
 *.csproj
 *.sln
 *.user
+*.pidb
+*.svd
+*.suo
+.vs/
+.idea/
 
