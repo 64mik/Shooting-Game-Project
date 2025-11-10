@@ -44,26 +44,27 @@ public class Gun : MonoBehaviour
             Debug.LogWarning("bulletPrefab 또는 firePoint가 연결되지 않았습니다!");
             return;
         }
+
         if (bulletsLeft <= 0)
-            Debug.Log("총알 부족!");
-        else
         {
-            {
-                Debug.Log("발사");
-                Debug.Log(bulletsLeft - 1 + "남음");
-                GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
-                Rigidbody rb = bullet.GetComponent<Rigidbody>();
-                if (rb != null)
-                    rb.linearVelocity = firePoint.forward * bulletSpeed;
-
-                if (muzzleFlash != null)
-                    muzzleFlash.Play();
-
-                bulletsLeft--;
-            }
+            Debug.Log("총알 부족!");
+            return;
         }
 
+        var go = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+
+        // 총알에 속도/데미지 주입
+        var bullet = go.GetComponent<Bullet>();
+        if (bullet != null)
+        {
+            bullet.Setup(firePoint.forward, bulletSpeed, damage);
+        }
+        if (muzzleFlash != null) muzzleFlash.Play();
+
+        bulletsLeft--;
+        Debug.Log($"발사, 남은 탄: {bulletsLeft}");
     }
+
 
     public void Reload()
     {
