@@ -6,7 +6,6 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody), typeof(Collider))]
 public class Bullet : MonoBehaviour
 {
-    //[Header("수명(선택)")]
     //[Tooltip("허공으로 쏜 탄을 자동 정리하는 안전장치. 0이면 비활성화.")]
     public float lifeTime = 3f; // 발사 후 3초 뒤 삭제
 

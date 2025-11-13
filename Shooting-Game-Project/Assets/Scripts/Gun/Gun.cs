@@ -71,4 +71,12 @@ public class Gun : MonoBehaviour
         bulletsLeft = maxBullet;
         Debug.Log("재장전 완료!");
     }
+
+
+       // PlayerInput(Behavior = Send Messages)이 호출할 함수
+       public void OnAttack(InputValue value)
+        {
+            // 버튼이 눌렸을 때마다 발사
+            OnShoot();
+        }
 }
