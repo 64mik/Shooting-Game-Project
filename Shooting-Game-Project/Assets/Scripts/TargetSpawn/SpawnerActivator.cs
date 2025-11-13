@@ -13,7 +13,7 @@ public class SpawnerActivator : MonoBehaviour
     public KeyCode key = KeyCode.E;
 
     [Header("한 번만 작동할지 여부")]
-    public bool onlyOnce = true;
+    public bool onlyOnce = false;
 
     private bool hasActivated = false;
 

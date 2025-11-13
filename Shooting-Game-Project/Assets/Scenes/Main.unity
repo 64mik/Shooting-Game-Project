@@ -914,7 +914,7 @@ MonoBehaviour:
   player: {fileID: 449679894}
   interactDistance: 3
   key: 101
-  onlyOnce: 1
+  onlyOnce: 0
 --- !u!1 &1330171588
 GameObject:
   m_ObjectHideFlags: 0
