@@ -22,6 +22,12 @@ public class Gun : MonoBehaviour
     {
         bulletsLeft = maxBullet;
     }
+
+    void Start()
+    {
+        // ▼ 추가: 시작하자마자 HUD를 10/10으로 세팅하고 힌트 끄기
+        UIHUD.I?.SetAmmo(bulletsLeft, maxBullet);
+    }
     public void OnShoot()
     {
         if (Time.time >= nextFireTime)
@@ -62,6 +68,8 @@ public class Gun : MonoBehaviour
         if (muzzleFlash != null) muzzleFlash.Play();
 
         bulletsLeft--;
+
+        UIHUD.I?.SetAmmo(bulletsLeft, maxBullet);   // ← 발사 후 갱신
         Debug.Log($"발사, 남은 탄: {bulletsLeft}");
     }
 
@@ -69,6 +77,9 @@ public class Gun : MonoBehaviour
     public void Reload()
     {
         bulletsLeft = maxBullet;
+
+        UIHUD.I?.SetAmmo(bulletsLeft, maxBullet);   // ← 재장전 후 갱신
+        
         Debug.Log("재장전 완료!");
     }
 
