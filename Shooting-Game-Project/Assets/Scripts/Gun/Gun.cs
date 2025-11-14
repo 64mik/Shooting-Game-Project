@@ -73,7 +73,6 @@ public class Gun : MonoBehaviour
     }
 
 
-       // PlayerInput(Behavior = Send Messages)이 호출할 함수
        public void OnAttack(InputValue value)
         {
             // 버튼이 눌렸을 때마다 발사
