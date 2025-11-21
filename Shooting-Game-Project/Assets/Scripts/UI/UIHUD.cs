@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 public class UIHUD : MonoBehaviour
@@ -10,6 +11,10 @@ public class UIHUD : MonoBehaviour
      [SerializeField] TMPro.TMP_Text ammoText;
     [SerializeField] TMPro.TMP_Text reloadHint;
     [SerializeField] CrosshairPulse crosshair;
+
+    [Header("Stamina")]
+    [SerializeField] Image staminaFill;   // StaminaBar_Fill 이미지
+
 
     void Awake() {
         if (I != null && I != this){ Destroy(gameObject);  return; }
@@ -23,6 +28,16 @@ public class UIHUD : MonoBehaviour
         int m = totalSec / 60;
         int s = totalSec % 60;
         timeText.text = $"{m:00}:{s:00}";
+    }
+
+    public void SetStamina(float cur, float max)
+    {
+        float t = Mathf.Clamp01(cur / max);       // 0~1 사이 값
+        if (staminaFill)
+        {
+            // X 스케일만 줄이기 → 가운데 기준으로 양쪽에서 줄어듦
+            staminaFill.rectTransform.localScale = new Vector3(t, 1f, 1f);
+        }
     }
 
     public void SetAccuracy(float a) => accText.text = $"Acc: {a:0}%";

@@ -9,6 +9,13 @@ public class Gun : MonoBehaviour
     public ParticleSystem muzzleFlash;  //총 쏘면 번쩍이는 거, 나중에 추가 요함
     public AudioClip shootSound;    //총 소리, 총 소리도 아직 없음
 
+    [Header("카메라 참조")]
+
+    [SerializeField] Camera cam;
+    [SerializeField] float maxDist = 100f;      // 레이 최대 거리
+    [SerializeField] LayerMask hitMask = ~0;    // 맞출 레이어 (원하면 설정)
+
+
     [Header("총알 설정")]
     public int maxBullet = 10;    //최대 장탄 수
     public float fireRate = 0.5f;   //총 발사 후 지연 시간
@@ -21,6 +28,7 @@ public class Gun : MonoBehaviour
     private void Awake()
     {
         bulletsLeft = maxBullet;
+        if (!cam) cam = Camera.main;
     }
 
     void Start()
@@ -57,14 +65,40 @@ public class Gun : MonoBehaviour
             return;
         }
 
+        // -------------------------------
+        // 1) 화면 중앙에서 나가는 레이 계산
+        // -------------------------------
+        Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+
+        Vector3 targetPoint;
+
+        // 뭔가 맞으면 그 위치, 아니면 일정 거리 앞을 목표로 사용
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDist, hitMask))
+            targetPoint = hit.point;
+        else
+            targetPoint = ray.origin + ray.direction * maxDist;
+
+        // firePoint에서 그 목표 지점을 향하는 방향
+        Vector3 dir = (targetPoint - firePoint.position).normalized;
+
+        // 총구 방향도 맞추고 싶다면(선택 사항)
+        firePoint.rotation = Quaternion.LookRotation(dir);
+
+        // -------------------------------
+        // 2) 총알 생성 + 방향/속도/데미지 세팅
+        // -------------------------------
         var go = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
 
-        // 총알에 속도/데미지 주입
         var bullet = go.GetComponent<Bullet>();
         if (bullet != null)
         {
-            bullet.Setup(firePoint.forward, bulletSpeed, damage);
+            // 🔴 예전: firePoint.forward
+            // bullet.Setup(firePoint.forward, bulletSpeed, damage);
+
+            // ✅ 수정: 카메라 중앙 기준으로 계산한 dir 사용
+            bullet.Setup(dir, bulletSpeed, damage);
         }
+        
         if (muzzleFlash != null) muzzleFlash.Play();
 
         bulletsLeft--;
