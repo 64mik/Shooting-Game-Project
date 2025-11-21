@@ -2,14 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-// 지정한 '벽' 평면 위에서 랜덤 위치로 Target 프리팹을 스폰.
-// maxAlive 개수로 유지
-
 public class TargetSpawner : MonoBehaviour
 {
     [Header("필수")]
-    public GameObject targetPrefab;   // Target 프리팹 (Tag=Target, Target.cs 포함)
+    public GameObject targetPrefab;   // Target 프리팹
     public Transform wall;            // 기준이 되는 벽 Transform
 
     [Header("스폰 영역(벽 기준)")]
@@ -101,11 +97,11 @@ public class TargetSpawner : MonoBehaviour
             wallDepth = wall.localScale.z * 0.5f;
         }
 
-        // 벽의 중심에서, 타겟이 서야 하는 "벽 표면 위치"를 구함
+        // 벽의 중심에서, 타겟이 생성되는 '벽 표면 위치'를 구함
         float totalOffset = wallDepth + wallOffset; // 벽 반두께 + 추가 거리
         Vector3 wallSurfaceCenter = wall.position + faceDir * totalOffset;
 
-        // 벽 표면 위에서 좌우/상하로 랜덤 이동
+        // 벽 표면 위에서 랜덤 이동
         float rx = Random.Range(-areaSize.x * 0.5f, areaSize.x * 0.5f);
         float ry = Random.Range(-areaSize.y * 0.5f, areaSize.y * 0.5f);
 

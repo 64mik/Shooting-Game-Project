@@ -1,7 +1,5 @@
 using UnityEngine;
 
-// 총알에 맞으면 HP가 줄고, 0 이하가 되면 Destroy되는 표적.
-// Aim Hero형 게임에서 HP 1 = 한 방, HP ↑ = 난이도 상승.
 public class Target : MonoBehaviour, IHittable
 {
     // 타겟 hp 설정

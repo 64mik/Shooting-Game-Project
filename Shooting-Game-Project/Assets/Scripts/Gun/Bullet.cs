@@ -1,8 +1,5 @@
 using UnityEngine;
 
-// 총에서 Setup으로 속도/데미지를 주입받음
-// 'Target' 태그를 가진 오브젝트에만 반응하도록 수정
-
 [RequireComponent(typeof(Rigidbody), typeof(Collider))]
 public class Bullet : MonoBehaviour
 {
