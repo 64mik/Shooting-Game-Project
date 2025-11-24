@@ -25,6 +25,7 @@ public class Gun : MonoBehaviour
 
     private void Awake()
     {
+        ammoLeft = maxAmmo; //초기 여분 탄약 수 설정
         currentAmmo = maxAmmo; //기본적으로 최대 장탄 수로 세팅
         if (!cam) cam = Camera.main;
     }
@@ -47,6 +48,11 @@ public class Gun : MonoBehaviour
 
     public void OnReload()
     {
+        if(ammoLeft <= 0)
+        {
+            Debug.Log("재장전 실패: 여분의 탄약이 없습니다!");
+            return;
+        }
         Reload();
     }
 
@@ -65,7 +71,7 @@ public class Gun : MonoBehaviour
             return;
         }
 
-        if (ammoLeft <= 0)
+        if (currentAmmo <= 0)
         {
             Debug.Log("총알 부족!");
             return;
