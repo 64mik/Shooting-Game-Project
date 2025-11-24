@@ -10,31 +10,29 @@ public class Gun : MonoBehaviour
     public AudioClip shootSound;    //총 소리, 총 소리도 아직 없음
 
     [Header("카메라 참조")]
-
     [SerializeField] Camera cam;
     [SerializeField] float maxDist = 100f;      // 레이 최대 거리
     [SerializeField] LayerMask hitMask = ~0;    // 맞출 레이어 (원하면 설정)
 
-
     [Header("총알 설정")]
-    public int maxBullet = 10;    //최대 장탄 수
-    public float fireRate = 0.5f;   //총 발사 후 지연 시간
     public float bulletSpeed = 20f; //생성할 총알 속도
-    public float damage = 1f;      
- 
-    private int bulletsLeft;    //남은 총알 수
+    public float damage = 1f;
+    public float fireRate = 0.5f;   //총 발사 후 지연 시간
+    public int maxAmmo = 10;    //장전가능한 최대 장탄 수
+    private int currentAmmo; //현재 남은 총알
+    private int ammoLeft;    //여분 탄약 수
     private float nextFireTime; //다음 총 발사 가능 시간
 
     private void Awake()
     {
-        bulletsLeft = maxBullet;
+        currentAmmo = maxAmmo; //기본적으로 최대 장탄 수로 세팅
         if (!cam) cam = Camera.main;
     }
 
     void Start()
     {
         // 추가: 시작하자마자 HUD를 10/10으로 세팅하고 힌트 끄기
-        UIHUD.I?.SetAmmo(bulletsLeft, maxBullet);
+        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);
     }
 
     public void OnShoot()
@@ -49,7 +47,14 @@ public class Gun : MonoBehaviour
 
     public void OnReload()
     {
-            Reload();
+        Reload();
+    }
+
+    public void AddAmmo(int amount)
+    {
+        ammoLeft += amount;
+        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 탄약 추가 후 갱신
+        Debug.Log($"탄약 추가: {amount}, 현재 소유 탄약: {ammoLeft}");
     }
 
     private void Shoot()
@@ -60,7 +65,7 @@ public class Gun : MonoBehaviour
             return;
         }
 
-        if (bulletsLeft <= 0)
+        if (ammoLeft <= 0)
         {
             Debug.Log("총알 부족!");
             return;
@@ -102,20 +107,43 @@ public class Gun : MonoBehaviour
         
         if (muzzleFlash != null) muzzleFlash.Play();
 
-        bulletsLeft--;
+        currentAmmo--;
 
-        UIHUD.I?.SetAmmo(bulletsLeft, maxBullet);   // 발사 후 갱신
-        Debug.Log($"발사, 남은 탄: {bulletsLeft}");
+        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 발사 후 갱신
+        Debug.Log($"발사, 남은 탄: {currentAmmo}");
     }
 
 
     public void Reload()
     {
-        bulletsLeft = maxBullet;
-
-        UIHUD.I?.SetAmmo(bulletsLeft, maxBullet);   // 재장전 후 갱신
-        
-        Debug.Log("재장전 완료!");
+        if (ammoLeft >= maxAmmo)    //총알 수 여유있음
+        {
+            if(currentAmmo != 0)
+            {
+                ammoLeft += currentAmmo; //현재 탄창에 남은 탄약을 여분 탄약에 다시 더함
+            }
+            ammoLeft -= maxAmmo;
+            currentAmmo = maxAmmo;
+            UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 재장전 후 갱신
+            Debug.Log("재장전 완료!");
+        }
+        else if(ammoLeft > 0)   //남은 탄약으로 재장전
+        {
+            if (currentAmmo != 0)
+            {
+                ammoLeft += currentAmmo; //현재 탄창에 남은 탄약을 여분 탄약에 다시 더함
+            }
+            currentAmmo = ammoLeft;
+            ammoLeft = 0;
+            UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 재장전 후 갱신
+            Debug.Log("탄약이 부족하여 남은 탄약으로 재장전 완료!");
+        }
+        else
+        {
+            Debug.Log("재장전 실패: 여분의 탄약이 없습니다!");
+        }
+        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 발사 후 갱신
+        Debug.Log($"발사, 남은 탄: {currentAmmo}");
     }
 
 

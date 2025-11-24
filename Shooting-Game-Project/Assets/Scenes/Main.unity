@@ -171,6 +171,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlayerRig
       objectReference: {fileID: 0}
+    - target: {fileID: 5011044666311154942, guid: 914fc427d6c5ef449a72f08215f0e8cd, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 6729521557443635921, guid: 914fc427d6c5ef449a72f08215f0e8cd, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 9218909797173737344, guid: 914fc427d6c5ef449a72f08215f0e8cd, type: 3}
+      propertyPath: m_Actions
+      value: 
+      objectReference: {fileID: -944628639613478452, guid: 2c2bc042665bd0348b56ac3c27852c11, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -997,6 +1009,7 @@ GameObject:
   - component: {fileID: 1330171591}
   - component: {fileID: 1330171590}
   - component: {fileID: 1330171593}
+  - component: {fileID: 1330171594}
   m_Layer: 0
   m_Name: floor
   m_TagString: Untagged
@@ -1128,6 +1141,21 @@ MonoBehaviour:
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 23800000, guid: b0c62f4bdbcf2f048a83cdd9519e317d, type: 2}
   m_BuildHeightMesh: 0
+--- !u!114 &1330171594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1330171588}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6d6640af918bd444a933ec552c0cedd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BulletSpawner
+  ammoPrefab: {fileID: 6022567555349111931, guid: 774a018b8dcd3fe429c238a9ac63ff48, type: 3}
+  spawnCount: 10
+  spawnOffset: {x: 0, y: 0.5, z: 0}
 --- !u!1 &1442151525
 GameObject:
   m_ObjectHideFlags: 0

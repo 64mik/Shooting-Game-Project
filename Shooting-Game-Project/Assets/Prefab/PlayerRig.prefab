@@ -169,7 +169,7 @@ GameObject:
   - component: {fileID: 4674044119802608421}
   m_Layer: 0
   m_Name: PlayerRig
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -233,6 +233,10 @@ MonoBehaviour:
   acceleration: 12
   airControl: 0.4
   gravity: -20
+  maxStamina: 100
+  staminaDrainPerSec: 25
+  staminaRegenPerSec: 15
+  sprintMinStamina: 5
 --- !u!1 &7437636922489222711
 GameObject:
   m_ObjectHideFlags: 0
