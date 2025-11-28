@@ -20,8 +20,8 @@ public class FpsMove : MonoBehaviour
     [Header("Stamina")]
     [SerializeField] float maxStamina = 100f;        // 최대 스태미너
     [SerializeField] float staminaDrainPerSec = 25f; // 초당 소모량
-    [SerializeField] float staminaRegenPerSec = 15f; // 초당 회복량
-    [SerializeField] float sprintMinStamina = 5f;    // 이 값 이하로 떨어지면 스프린트 불가
+    [SerializeField] float staminaRegenPerSec = 3f; // 초당 회복량
+    [SerializeField] float sprintMinStamina = 30f;    // 이 값 이하로 떨어지면 스프린트 불가
 
     float stamina;  // 현재 스태미너
     CharacterController cc; // 충돌·계단·경사 처리용 컨트롤러
@@ -99,7 +99,7 @@ public class FpsMove : MonoBehaviour
             // 달리는 중 → 스태미너 소모
             stamina -= staminaDrainPerSec * Time.deltaTime;
             }
-            else
+            else if(grounded && !shiftDown)
             {   
             // 달리지 않을 때, 또는 공중일 때 → 서서히 회복
             stamina += staminaRegenPerSec * Time.deltaTime;
