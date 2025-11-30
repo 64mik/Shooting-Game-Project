@@ -3,59 +3,49 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody), typeof(Collider))]
 public class Bullet : MonoBehaviour
 {
-    public float lifeTime = 3f; // 발사 후 3초 뒤 삭제
+    public float lifeTime = 3f;     // 자동 제거 시간
+    public float gravityScale = 0.1f; // 중력 약하게
+    public float damage = 1f;
 
-    public bool useCustomGravity = true; // 중력
-    public float gravityScale = 0.2f;    // 중력 약하게 설정
+    Rigidbody rb;
 
-    // 총에서 세팅받을 값
-    private float damage = 1f;
-    private Vector3 initVelocity;
-
-    private Rigidbody rb;
-
-    private void Awake()
+    void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        rb.useGravity = false; // 기본 중력은 끔
+        rb.useGravity = false;
+
+        // 관통 방지
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+        // 튕김 방지
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Bullet"),
+                                     LayerMask.NameToLayer("Bullet"));
     }
 
-    // 총에서 발사 직후 호출: 방향, 속도, 데미지 주입
-
-    public void Setup(Vector3 direction, float speed, float setDamage)
+    public void Setup(Vector3 dir, float speed, float dmg)
     {
-        damage = setDamage;
-        initVelocity = direction.normalized * speed;
-        rb.linearVelocity = initVelocity;
-
-        if (lifeTime > 0f)
-            Destroy(gameObject, lifeTime); // 허공 발사 자동 정리
+        damage = dmg;
+        rb.linearVelocity = dir * speed;
+        Destroy(gameObject, lifeTime);
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
-        if (useCustomGravity && gravityScale != 0f)
-        {
-            // 기본 중력 = Physics.gravity. 배율로 약화/강화
-            rb.AddForce(Physics.gravity * gravityScale, ForceMode.Acceleration);
-        }
+        // 커스텀 중력
+        rb.AddForce(Physics.gravity * gravityScale, ForceMode.Acceleration);
     }
 
-    private void OnCollisionEnter(Collision collision)
+    void OnCollisionEnter(Collision col)
     {
-        // 태그 필터: Target에만 반응
-        if (!collision.collider.CompareTag("Target"))
-            return;
-
-        // IHittable이면 데미지 전달
-        var hit = collision.collider.GetComponent<IHittable>();
+        // IHittable만 피격
+        var hit = col.collider.GetComponent<IHittable>();
         if (hit != null)
         {
-            var contact = collision.GetContact(0);
+            var contact = col.GetContact(0);
             hit.TakeHit(damage, contact.point, contact.normal);
         }
 
-        Destroy(gameObject); // 타겟에 명중하면 소멸
+        Destroy(gameObject);
     }
 }
