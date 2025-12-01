@@ -23,6 +23,7 @@ public class Gun : MonoBehaviour
     private int ammoLeft;    //여분 탄약 수
     private float nextFireTime; //다음 총 발사 가능 시간
 
+
     private void Awake()
     {
         ammoLeft = maxAmmo; //초기 여분 탄약 수 설정
@@ -55,7 +56,7 @@ public class Gun : MonoBehaviour
         }
         Reload();
     }
-
+  
     public void AddAmmo(int amount)
     {
         ammoLeft += amount;

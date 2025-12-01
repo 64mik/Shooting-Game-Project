@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 3
   tags:
   - Target
+  - SpawnSpot
   layers:
   - Default
   - TransparentFX

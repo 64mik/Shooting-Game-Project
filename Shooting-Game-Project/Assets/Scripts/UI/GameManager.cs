@@ -18,6 +18,7 @@ public class GameManager : MonoBehaviour
 
     float playTime = 0f;
     int score = 0;
+    private int keysCollected = 0; //수집한 열쇠 수
     bool isPlaying = true;
 
     void Awake()
@@ -60,7 +61,25 @@ public class GameManager : MonoBehaviour
         // HUD 갱신
         UIHUD.I?.SetScore(score);
     }
-
+    public void AddKey()
+    {
+        keysCollected++;
+        Debug.Log($"[GameManager] 열쇠 획득! 현재 열쇠 개수: {keysCollected}");
+    }
+    public bool UseKeys(int count)
+    {
+        if (keysCollected >= count)
+        {
+            keysCollected -= count;
+            Debug.Log($"[GameManager] 문 열림! 남은 열쇠 개수: {keysCollected}");
+            return true;
+        }
+        else
+        {
+            Debug.Log($"[GameManager] 열쇠 부족! 현재 열쇠 개수: {keysCollected}, 필요한 개수: {count}");
+            return false;
+        }
+    }
     // 몬스터에게 맞으면 즉시 점수 차감
     public void RegisterMonsterHit()
     {
@@ -72,7 +91,6 @@ public class GameManager : MonoBehaviour
         UIHUD.I?.SetScore(score);
         Debug.Log($"[GameManager] 몬스터 피격! 현재 점수: {score}");
     }
-
     // 클리어 처리 (아직 실제 호출 안 함 → 전체 주석 처리)
     /*
     public void RegisterGameClear()
