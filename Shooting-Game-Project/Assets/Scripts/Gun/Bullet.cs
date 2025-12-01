@@ -19,8 +19,7 @@ public class Bullet : MonoBehaviour
 
         // 튕김 방지
         rb.constraints = RigidbodyConstraints.FreezeRotation;
-        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Bullet"),
-                                     LayerMask.NameToLayer("Bullet"));
+        //Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Bullet"),LayerMask.NameToLayer("Bullet"));
     }
 
     public void Setup(Vector3 dir, float speed, float dmg)

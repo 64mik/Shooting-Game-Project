@@ -182,7 +182,7 @@ PrefabInstance:
     - target: {fileID: 9218909797173737344, guid: 914fc427d6c5ef449a72f08215f0e8cd, type: 3}
       propertyPath: m_Actions
       value: 
-      objectReference: {fileID: -944628639613478452, guid: 2c2bc042665bd0348b56ac3c27852c11, type: 3}
+      objectReference: {fileID: -944628639613478452, guid: b504f8d1754a2ae4cae7642af471fb22, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2247,7 +2247,7 @@ MonoBehaviour:
   viewDistance: 10
   viewBoxSize: {x: 4, y: 8}
   loseChaseDelay: 3
-  defaultStunDuration: 2
+  defaultStunDuration: 3
   sfxSource: {fileID: 0}
   chaseStartClip: {fileID: 0}
   bgmSource: {fileID: 0}
