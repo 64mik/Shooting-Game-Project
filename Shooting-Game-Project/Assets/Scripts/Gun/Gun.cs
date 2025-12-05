@@ -39,12 +39,13 @@ public class Gun : MonoBehaviour
 
     public void OnShoot()
     {
+        if (GameUI.Paused) return;   // ← 일시정지면 발사 안 함
+
         if (Time.time >= nextFireTime)
         {
             Shoot();
             nextFireTime = Time.time + fireRate;
         }
-        
     }
 
     public void OnReload()
@@ -154,9 +155,9 @@ public class Gun : MonoBehaviour
     }
 
 
-       public void OnAttack(InputValue value)
-        {
-            // 버튼이 눌렸을 때마다 발사
-            OnShoot();
-        }
+    public void OnAttack(InputValue value)
+    {
+        if (GameUI.Paused) return;   // ← 일시정지면 입력 무시
+        OnShoot();
+    }
 }
