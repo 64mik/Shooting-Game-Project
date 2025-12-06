@@ -1,43 +1,49 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-// ¸ó½ºÅÍ AI
-// ¹Ì·Î ¾È¿¡¼­ 4¹æÇâ ¼øÂû
-// Á÷»ç°¢Çü ½Ã¾ß¿¡ ÇÃ·¹ÀÌ¾î º¸ÀÌ¸é NavMesh·Î Ãß°İ
-// ½ºÅÏ°Ç ¸ÂÀ¸¸é ÀÏÁ¤ ½Ã°£ ¸ØÃã (Á×Áö ¾ÊÀ½)
+// ï¿½ï¿½ï¿½ï¿½ AI
+// ï¿½Ì·ï¿½ ï¿½È¿ï¿½ï¿½ï¿½ 4ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½ç°¢ï¿½ï¿½ ï¿½Ã¾ß¿ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ NavMeshï¿½ï¿½ ï¿½ß°ï¿½
+// ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 public class MonsterAI : MonoBehaviour, IHittable
 {
     private enum State { Patrol, Chase, Stunned }
 
-    [Header("ÇÊ¼ö ÂüÁ¶")]
-    public Transform player;          // ÇÃ·¹ÀÌ¾î Transform
-    public LayerMask obstacleMask;    // º®/Àå¾Ö¹° ·¹ÀÌ¾î
+    [Header("ï¿½Ê¼ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    public Transform player;          // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Transform
+    public LayerMask obstacleMask;    // ï¿½ï¿½/ï¿½ï¿½Ö¹ï¿½ ï¿½ï¿½ï¿½Ì¾ï¿½
 
-    [Header("¼øÂû ¼³Á¤ (4¹æÇâ ÀÌµ¿)")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (4ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½)")]
     public float patrolSpeed = 2f;
-    public float directionChangeInterval = 2f;   // ¹æÇâ °­Á¦ º¯°æ °£°İ(ÃÊ)
-    public float wallCheckDistance = 0.5f;       // ¾Õ¿¡ º® °¨Áö °Å¸®
+    public float directionChangeInterval = 2f;   // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½)
+    public float wallCheckDistance = 0.5f;       // ï¿½Õ¿ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Å¸ï¿½
 
-    [Header("Ãß°İ ¼³Á¤ (NavMesh)")]
+    [Header("ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½ (NavMesh)")]
     public float chaseSpeed = 4f;
-    public float viewDistance = 8f;              // ½Ã¾ß ±æÀÌ (¾ÕÀ¸·Î)
-    public Vector2 viewBoxSize = new Vector2(4f, 8f); // ½Ã¾ß Á÷»ç°¢Çü (°¡·Î, ¼¼·Î)
-    public float loseChaseDelay = 3f;            // ÇÃ·¹ÀÌ¾î ¾È º¸¿©µµ ÀÌ ½Ã°£ µ¿¾ÈÀº °è¼Ó Ãß°İ
+    public float viewDistance = 8f;              // ï¿½Ã¾ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
+    public Vector2 viewBoxSize = new Vector2(4f, 8f); // ï¿½Ã¾ï¿½ ï¿½ï¿½ï¿½ç°¢ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½)
+    public float loseChaseDelay = 3f;            // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
 
-    [Header("½ºÅÏ ¼³Á¤")]
-    public float defaultStunDuration = 2f;       // Bullet damage°¡ 0ÀÏ ¶§ ±âº» ½ºÅÏ ½Ã°£
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    public float defaultStunDuration = 2f;       // Bullet damageï¿½ï¿½ 0ï¿½ï¿½ ï¿½ï¿½ ï¿½âº» ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
 
-    [Header("»ç¿îµå")]
-    public AudioSource sfxSource;        // È¿°úÀ½ Àç»ı¿ë (¸ó½ºÅÍ º»ÀÎ)
-    public AudioClip chaseStartClip;     // Ãß°İ ½ÃÀÛ È¿°úÀ½
-    public AudioSource bgmSource;        // ±äÀå BGM(AudioSource)
+    [Header("ï¿½ï¿½ï¿½ï¿½")]
+    public AudioSource sfxSource;        // È¿ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+    public AudioClip chaseStartClip;     // ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½ È¿ï¿½ï¿½ï¿½ï¿½
+    public AudioSource bgmSource;        // ï¿½ï¿½ï¿½ï¿½ BGM(AudioSource)
 
-    // ³»ºÎ »óÅÂ
+    [Header("ê³µê²©")]
+    [SerializeField] int attackDamage = 10;      // ê³µê²©ë ¥
+    [SerializeField] float attacksPerSec = 1.5f; // ê³µì†(ì´ˆë‹¹ ê³µê²© ìˆ˜)
+    [SerializeField] float attackRange = 1.2f;   // ê³µê²© íŒì • ê±°ë¦¬(ê·¼ì ‘)
+
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     State state = State.Patrol;
+    float nextAttackTime;                        // ë‚´ë¶€ ì¿¨ë‹¤ìš´
     float dirTimer;
     float loseSightTimer;
     float stunTimer;
-    Vector3 currentDir;      // ÇöÀç ¼øÂû ¹æÇâ (»ó/ÇÏ/ÁÂ/¿ì)
+    Vector3 currentDir;      // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½/ï¿½ï¿½/ï¿½ï¿½/ï¿½ï¿½)
     NavMeshAgent agent;
 
     void Awake()
@@ -46,8 +52,9 @@ public class MonsterAI : MonoBehaviour, IHittable
         if (agent != null)
         {
             agent.speed = chaseSpeed;
-            agent.stoppingDistance = 0.1f;
-            agent.updateRotation = false; // È¸ÀüÀº ¿ì¸®°¡ Á÷Á¢
+            agent.stoppingDistance = Mathf.Max(0.05f, attackRange * 0.8f);
+            attackRange = Mathf.Max(attackRange, agent.stoppingDistance);
+            agent.updateRotation = false; // È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ì¸®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         }
 
         PickRandomDirection();
@@ -69,10 +76,10 @@ public class MonsterAI : MonoBehaviour, IHittable
         }
     }
 
-    // --------- ¼øÂû »óÅÂ ---------
+    // --------- ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ---------
     void UpdatePatrol()
     {
-        // NavMeshAgent ²ô°í ´Ü¼ø ÀÌµ¿
+        // NavMeshAgent ï¿½ï¿½ï¿½ï¿½ ï¿½Ü¼ï¿½ ï¿½Ìµï¿½
         if (agent != null && agent.enabled)
             agent.enabled = false;
 
@@ -82,18 +89,18 @@ public class MonsterAI : MonoBehaviour, IHittable
             PickRandomDirection();
         }
 
-        // ¾ÕÀ¸·Î ÀÌµ¿
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½
         transform.position += currentDir * patrolSpeed * Time.deltaTime;
         transform.forward = currentDir;
 
-        // ¾Õ¿¡ º® ÀÖÀ¸¸é ¹æÇâ º¯°æ
+        // ï¿½Õ¿ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (Physics.Raycast(transform.position + Vector3.up * 0.5f, currentDir,
             wallCheckDistance, obstacleMask))
         {
             PickRandomDirection();
         }
 
-        // ÇÃ·¹ÀÌ¾î°¡ ½Ã¾ß ¾È¿¡ µé¾î¿À¸é Ãß°İ ½ÃÀÛ
+        // ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½Ã¾ï¿½ ï¿½È¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (CanSeePlayer())
         {
             StartChase();
@@ -104,7 +111,7 @@ public class MonsterAI : MonoBehaviour, IHittable
     {
         dirTimer = directionChangeInterval;
 
-        // »ó/ÇÏ/ÁÂ/¿ì Áß ÇÏ³ª °í¸£±â
+        // ï¿½ï¿½/ï¿½ï¿½/ï¿½ï¿½/ï¿½ï¿½ ï¿½ï¿½ ï¿½Ï³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         int r = Random.Range(0, 4);
         switch (r)
         {
@@ -115,7 +122,7 @@ public class MonsterAI : MonoBehaviour, IHittable
         }
     }
 
-    // --------- Ãß°İ »óÅÂ ---------
+    // --------- ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½ ---------
     void StartChase()
     {
         state = State.Chase;
@@ -127,13 +134,13 @@ public class MonsterAI : MonoBehaviour, IHittable
             agent.speed = chaseSpeed;
         }
 
-        // Ãß°İ ½ÃÀÛ È¿°úÀ½
+        // ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½ È¿ï¿½ï¿½ï¿½ï¿½
         if (sfxSource != null && chaseStartClip != null)
         {
             sfxSource.PlayOneShot(chaseStartClip);
         }
 
-        // ±äÀå BGM ½ÃÀÛ
+        // ï¿½ï¿½ï¿½ï¿½ BGM ï¿½ï¿½ï¿½ï¿½
         if (bgmSource != null && !bgmSource.isPlaying)
         {
             bgmSource.Play();
@@ -145,13 +152,13 @@ public class MonsterAI : MonoBehaviour, IHittable
         state = State.Patrol;
         PickRandomDirection();
 
-        // BGM Á¤Áö
+        // BGM ï¿½ï¿½ï¿½ï¿½
         if (bgmSource != null && bgmSource.isPlaying)
         {
             bgmSource.Stop();
         }
 
-        // NavMeshAgent´Â ¼øÂû¿¡¼­ ¾È ¾¸
+        // NavMeshAgentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½
         if (agent != null && agent.enabled)
             agent.enabled = false;
     }
@@ -168,7 +175,7 @@ public class MonsterAI : MonoBehaviour, IHittable
         {
             agent.SetDestination(player.position);
 
-            // ÁøÇà ¹æÇâÀ¸·Î ¸ö µ¹¸®±â
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             if (agent.desiredVelocity.sqrMagnitude > 0.1f)
             {
                 Vector3 dir = agent.desiredVelocity.normalized;
@@ -177,13 +184,13 @@ public class MonsterAI : MonoBehaviour, IHittable
         }
         else
         {
-            // NavMesh ¾ø´Â °æ¿ì: ±×³É Á÷¼± Ãß°İ (º®¿¡ ¸·Èú ¼ö ÀÖÀ½)
+            // NavMesh ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½: ï¿½×³ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
             Vector3 dir = (player.position - transform.position).normalized;
             transform.position += dir * chaseSpeed * Time.deltaTime;
             transform.forward = dir;
         }
 
-        // ÇÃ·¹ÀÌ¾î¸¦ º¼ ¼ö ÀÖÀ¸¸é Å¸ÀÌ¸Ó ÃÊ±âÈ­
+        // ï¿½Ã·ï¿½ï¿½Ì¾î¸¦ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½Ì¸ï¿½ ï¿½Ê±ï¿½È­
         if (CanSeePlayer())
         {
             loseSightTimer = 0f;
@@ -196,15 +203,29 @@ public class MonsterAI : MonoBehaviour, IHittable
                 StopChase();
             }
         }
+        // ... ê¸°ì¡´ ì¶”ê²© ë¡œì§/ì‹œì•¼ ì²´í¬ ì•„ë˜ì— ë¶™ì´ê¸° ...
+
+        // í”Œë ˆì´ì–´ì™€ì˜ ê±°ë¦¬ ê³„ì‚°
+        Vector3 a = transform.position; a.y = 0f;
+        Vector3 b = player.position;    b.y = 0f;
+        float distToPlayer = Vector3.Distance(a, b);
+
+        // ì‚¬ê±°ë¦¬ ì•ˆ + ì¿¨ë‹¤ìš´ OK ì´ë©´ ê³µê²©
+        if (distToPlayer <= attackRange && Time.time >= nextAttackTime)
+        {
+            nextAttackTime = Time.time + 1f / Mathf.Max(0.01f, attacksPerSec);
+            DoAttack();
+        }
+
     }
 
-    // --------- ½ºÅÏ »óÅÂ ---------
+    // --------- ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ---------
     void StartStun(float duration)
     {
         state = State.Stunned;
         stunTimer = duration;
 
-        // Ãß°İ ÁßÀÌ¾ú´Ù¸é BGMµµ ²û
+        // ï¿½ß°ï¿½ ï¿½ï¿½ï¿½Ì¾ï¿½ï¿½Ù¸ï¿½ BGMï¿½ï¿½ ï¿½ï¿½
         if (bgmSource != null && bgmSource.isPlaying)
             bgmSource.Stop();
 
@@ -217,7 +238,7 @@ public class MonsterAI : MonoBehaviour, IHittable
         stunTimer -= Time.deltaTime;
         if (stunTimer <= 0f)
         {
-            // ½ºÅÏ Ç®¸®¸é ´Ù½Ã ½Ã¾ß È®ÀÎÇØ¼­ Ãß°İ/¼øÂû °áÁ¤
+            // ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½Ã¾ï¿½ È®ï¿½ï¿½ï¿½Ø¼ï¿½ ï¿½ß°ï¿½/ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if (CanSeePlayer())
                 StartChase();
             else
@@ -228,20 +249,20 @@ public class MonsterAI : MonoBehaviour, IHittable
         }
     }
 
-    // --------- ½Ã¾ß Ã¼Å© (Á÷»ç°¢Çü + º® °¡¸²) ---------
+    // --------- ï¿½Ã¾ï¿½ Ã¼Å© (ï¿½ï¿½ï¿½ç°¢ï¿½ï¿½ + ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½) ---------
     bool CanSeePlayer()
     {
         if (player == null) return false;
 
-        // Á÷»ç°¢Çü ½Ã¾ß ¿µ¿ª Áß½É (¾ÕÀ¸·Î viewDistance/2)
+        // ï¿½ï¿½ï¿½ç°¢ï¿½ï¿½ ï¿½Ã¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ viewDistance/2)
         Vector3 forward = transform.forward;
         Vector3 center = transform.position + Vector3.up * 1f +
                          forward * (viewDistance * 0.5f);
 
         Vector3 halfExtents = new Vector3(viewBoxSize.x * 0.5f, 1f, viewDistance * 0.5f);
 
-        // Player ·¹ÀÌ¾î¸¸ Àâµµ·Ï ·¹ÀÌ¾î¸¶½ºÅ© µû·Î ¾²´Â°Ô ÁÁÀ½
-        // ¿©±â¼± °£´ÜÈ÷: ÇÃ·¹ÀÌ¾î Äİ¶óÀÌ´õ¸¸ ÀÖ´Ù°í °¡Á¤
+        // Player ï¿½ï¿½ï¿½Ì¾î¸¸ ï¿½âµµï¿½ï¿½ ï¿½ï¿½ï¿½Ì¾î¸¶ï¿½ï¿½Å© ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â°ï¿½ ï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½â¼± ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½İ¶ï¿½ï¿½Ì´ï¿½ï¿½ï¿½ ï¿½Ö´Ù°ï¿½ ï¿½ï¿½ï¿½ï¿½
         Collider[] hits = Physics.OverlapBox(center, halfExtents, transform.rotation);
         bool insideRect = false;
         foreach (var col in hits)
@@ -254,21 +275,21 @@ public class MonsterAI : MonoBehaviour, IHittable
         }
         if (!insideRect) return false;
 
-        // Á÷»ç°¢Çü ¾È¿¡ ÀÖ´õ¶óµµ, º®¿¡ °¡·ÁÁ® ÀÖÀ¸¸é ¸ø º¸´Â °É·Î Ã³¸®
+        // ï¿½ï¿½ï¿½ç°¢ï¿½ï¿½ ï¿½È¿ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½É·ï¿½ Ã³ï¿½ï¿½
         Vector3 origin = transform.position + Vector3.up * 1f;
         Vector3 toPlayer = (player.position + Vector3.up * 1f) - origin;
         float dist = toPlayer.magnitude;
 
         if (Physics.Raycast(origin, toPlayer.normalized, dist, obstacleMask))
         {
-            // Áß°£¿¡ º®ÀÌ °¡·Î¸·À½
+            // ï¿½ß°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ï¿½ï¿½
             return false;
         }
 
         return true;
     }
 
-    // ¿¡µğÅÍ¿¡¼­ ½Ã¾ß ¹Ú½º º¸ÀÌ°Ô
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ ï¿½Ã¾ï¿½ ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½Ì°ï¿½
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
@@ -280,14 +301,34 @@ public class MonsterAI : MonoBehaviour, IHittable
         Gizmos.DrawWireCube(Vector3.zero, size);
     }
 
-    // --------- IHittable ±¸Çö (½ºÅÏ °Ç ÇÇ°İ) ---------
+    // --------- IHittable ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ç°ï¿½) ---------
     public void TakeHit(float damage, Vector3 hitPoint, Vector3 hitNormal)
     {
-        // ¿©±â¼­´Â damage¸¦ "½ºÅÏ ½Ã°£"À¸·Î °£ÁÖ
+        // ï¿½ï¿½ï¿½â¼­ï¿½ï¿½ damageï¿½ï¿½ "ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½"ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         float stunTime = damage > 0f ? damage : defaultStunDuration;
         StartStun(stunTime);
 
-        // ÇÇ°İ ÀÌÆåÆ®³ª ¼Ò¸® ³Ö°í ½ÍÀ¸¸é ¿©±â¼­ Ã³¸®
-        // ¿¹: sfxSource.PlayOneShot(stunClip);
+        // ï¿½Ç°ï¿½ ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Ò¸ï¿½ ï¿½Ö°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½â¼­ Ã³ï¿½ï¿½
+        // ï¿½ï¿½: sfxSource.PlayOneShot(stunClip);
     }
+
+        void DoAttack()
+    {
+         Debug.Log("[Enemy] DoAttack called");
+        // ì •ë©´ì„ í”Œë ˆì´ì–´ë¡œ í–¥í•˜ê²Œ(ì„ íƒ)
+        Vector3 to = (player.position - transform.position);
+        to.y = 0f;
+        if (to.sqrMagnitude > 0.0001f)
+            transform.forward = Vector3.Lerp(transform.forward, to.normalized, Time.deltaTime * 20f);
+
+        // ì‹¤ì œ ë°ë¯¸ì§€ ì ìš©
+        var hp = player.GetComponentInParent<PlayerHealth>();
+        if (hp != null)
+            hp.TakeDamage(attackDamage);
+
+        // TODO: ê³µê²© ì• ë‹ˆë©”ì´ì…˜/ì‚¬ìš´ë“œ/ì´í™íŠ¸ê°€ ìˆë‹¤ë©´ ì—¬ê¸°ì„œ íŠ¸ë¦¬ê±°
+        // animator.SetTrigger("Attack");
+        // sfxSource.PlayOneShot(attackClip);
+    }
+
 }

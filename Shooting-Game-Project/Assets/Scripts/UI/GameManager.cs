@@ -1,29 +1,41 @@
 using UnityEngine;
 using TMPro;
 
-// °ÔÀÓ ½Ã°£ ÃøÁ¤, Á¡¼ö °ü¸® ´ã´ç
-// ¸ó½ºÅÍ¿¡°Ô ¸ÂÀ¸¸é Á¡¼ö Áï½Ã °¨¼Ò
-// Å¬¸®¾î ½Ã ½Ã°£/Á¡¼ö Ç¥½Ã
+// ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+// ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+// Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã°ï¿½/ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½
 public class GameManager : MonoBehaviour
 {
-    public static GameManager I;
+     public static GameManager I { get; private set; }
 
-    [Header("°á°ú Ç¥½Ã¿ë ÅØ½ºÆ®")]
+    [Header("ï¿½ï¿½ï¿½ Ç¥ï¿½Ã¿ï¿½ ï¿½Ø½ï¿½Æ®")]
     [SerializeField] TMP_Text clearResultText;
 
-    [Header("Á¡¼ö ¼³Á¤")]
-    public int baseScore = 10000;         // ½ÃÀÛ Á¡¼ö
-    public int perSecondPenalty = 1;      // ÃÊ´ç °¨Á¡
-    public int hitPenalty = 200;          // ¸ó½ºÅÍ ÇÇ°İ ½Ã °¨Á¡
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    public int baseScore = 10000;         // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    public int perSecondPenalty = 1;      // ï¿½Ê´ï¿½ ï¿½ï¿½ï¿½ï¿½
+    public int hitPenalty = 200;          // ï¿½ï¿½ï¿½ï¿½ ï¿½Ç°ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
     float playTime = 0f;
     int score = 0;
-    private int keysCollected = 0; //¼öÁıÇÑ ¿­¼è ¼ö
+    public int keysCollected = 0; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
     bool isPlaying = true;
+
+    //ì”¬ ë¡œë“œ ì „ì— GameManagerê°€ ì—†ìœ¼ë©´ ìë™ ìƒì„±(+DontDestroyOnLoad)í•˜ì—¬ ì‹±ê¸€í†¤ì„ í•­ìƒ ë³´ì¥
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void Ensure()
+    {
+        if (FindFirstObjectByType<GameManager>() == null)
+        {
+            var go = new GameObject("GameManager");
+            go.AddComponent<GameManager>();
+            Object.DontDestroyOnLoad(go);
+        }
+    }
 
     void Awake()
     {
-        // ½Ì±ÛÅæ µî·Ï
+        // ï¿½Ì±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         if (I != null && I != this)
         {
             Destroy(gameObject);
@@ -31,14 +43,14 @@ public class GameManager : MonoBehaviour
         }
         I = this;
 
-        // Á¡¼ö ÃÊ±âÈ­
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
         score = baseScore;
 
-        // ½ÃÀÛ ½Ã °á°úÃ¢ ¼û±è
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Ã¢ ï¿½ï¿½ï¿½ï¿½
         if (clearResultText != null)
             clearResultText.gameObject.SetActive(false);
 
-        // HUD ÃÊ±â ¼¼ÆÃ
+        // HUD ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½
         UIHUD.I?.SetTime(0);
         UIHUD.I?.SetScore(score);
     }
@@ -47,40 +59,40 @@ public class GameManager : MonoBehaviour
     {
         if (!isPlaying) return;
 
-        // ½Ã°£ Áõ°¡
+        // ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½
         playTime += Time.deltaTime;
 
-        // HUD¿¡ ½Ã/ºĞ Ç¥½Ã
+        // HUDï¿½ï¿½ ï¿½ï¿½/ï¿½ï¿½ Ç¥ï¿½ï¿½
         int totalSec = Mathf.FloorToInt(playTime);
         UIHUD.I?.SetTime(totalSec);
 
-        // ÃÊ´ç Á¡¼ö °¨¼Ò
+        // ï¿½Ê´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         score -= perSecondPenalty * Mathf.FloorToInt(Time.deltaTime);
         if (score < 0) score = 0;
 
-        // HUD °»½Å
+        // HUD ï¿½ï¿½ï¿½ï¿½
         UIHUD.I?.SetScore(score);
     }
     public void AddKey()
     {
         keysCollected++;
-        Debug.Log($"[GameManager] ¿­¼è È¹µæ! ÇöÀç ¿­¼è °³¼ö: {keysCollected}");
+        Debug.Log($"[GameManager] ï¿½ï¿½ï¿½ï¿½ È¹ï¿½ï¿½! ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: {keysCollected}");
     }
     public bool UseKeys(int count)
     {
         if (keysCollected >= count)
         {
             keysCollected -= count;
-            Debug.Log($"[GameManager] ¹® ¿­¸²! ³²Àº ¿­¼è °³¼ö: {keysCollected}");
+            Debug.Log($"[GameManager] ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½! ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: {keysCollected}");
             return true;
         }
         else
         {
-            Debug.Log($"[GameManager] ¿­¼è ºÎÁ·! ÇöÀç ¿­¼è °³¼ö: {keysCollected}, ÇÊ¿äÇÑ °³¼ö: {count}");
+            Debug.Log($"[GameManager] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½! ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: {keysCollected}, ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: {count}");
             return false;
         }
     }
-    // ¸ó½ºÅÍ¿¡°Ô ¸ÂÀ¸¸é Áï½Ã Á¡¼ö Â÷°¨
+    // ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     public void RegisterMonsterHit()
     {
         if (!isPlaying) return;
@@ -89,9 +101,9 @@ public class GameManager : MonoBehaviour
         if (score < 0) score = 0;
 
         UIHUD.I?.SetScore(score);
-        Debug.Log($"[GameManager] ¸ó½ºÅÍ ÇÇ°İ! ÇöÀç Á¡¼ö: {score}");
+        Debug.Log($"[GameManager] ï¿½ï¿½ï¿½ï¿½ ï¿½Ç°ï¿½! ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: {score}");
     }
-    // Å¬¸®¾î Ã³¸® (¾ÆÁ÷ ½ÇÁ¦ È£Ãâ ¾È ÇÔ ¡æ ÀüÃ¼ ÁÖ¼® Ã³¸®)
+    // Å¬ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½Ö¼ï¿½ Ã³ï¿½ï¿½)
     /*
     public void RegisterGameClear()
     {
@@ -117,7 +129,7 @@ public class GameManager : MonoBehaviour
     }
     */
 
-    // °ÔÀÓ¿À¹ö Ã³¸® (¹Ì»ç¿ë)
+    // ï¿½ï¿½ï¿½Ó¿ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ (ï¿½Ì»ï¿½ï¿½)
     /*
     public void RegisterGameOver()
     {
