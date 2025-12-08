@@ -1,60 +1,70 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-// ���� AI
-// �̷� �ȿ��� 4���� ����
-// ���簢�� �þ߿� �÷��̾� ���̸� NavMesh�� �߰�
-// ���ϰ� ������ ���� �ð� ���� (���� ����)
 public class MonsterAI : MonoBehaviour, IHittable
 {
     private enum State { Patrol, Chase, Stunned }
 
-    [Header("�ʼ� ����")]
-    public Transform player;          // �÷��̾� Transform
-    public LayerMask obstacleMask;    // ��/��ֹ� ���̾�
+    [Header("필수 설정")]
+    public Transform player;          // 플레이어 Transform
+    public LayerMask obstacleMask;    // 벽/장애물 레이어
 
-    [Header("���� ���� (4���� �̵�)")]
+    [Header("애니메이션 설정 (자식 오브젝트의 Animator 연결)")]
+    public Animator animator;         // [추가됨] 인스펙터에서 자식의 Animator를 드래그해서 넣으세요
+
+    // [추가됨] 애니메이터 파라미터 이름 (Animator Controller의 파라미터와 같아야 함)
+    private readonly string hashWalk = "IsWalk";
+    private readonly string hashRun = "IsRun";
+    private readonly string hashAttack = "Attack";
+    private readonly string hashHit = "Hit";
+
+    [Header("순찰 설정 (4방향 이동)")]
     public float patrolSpeed = 2f;
-    public float directionChangeInterval = 2f;   // ���� ���� ���� ����(��)
-    public float wallCheckDistance = 0.5f;       // �տ� �� ���� �Ÿ�
+    public float directionChangeInterval = 2f;
+    public float wallCheckDistance = 0.5f;
 
-    [Header("�߰� ���� (NavMesh)")]
+    [Header("추격 설정 (NavMesh)")]
     public float chaseSpeed = 4f;
-    public float viewDistance = 8f;              // �þ� ���� (������)
-    public Vector2 viewBoxSize = new Vector2(4f, 8f); // �þ� ���簢�� (����, ����)
-    public float loseChaseDelay = 3f;            // �÷��̾� �� ������ �� �ð� ������ ��� �߰�
+    public float viewDistance = 8f;
+    public Vector2 viewBoxSize = new Vector2(4f, 8f);
+    public float loseChaseDelay = 3f;
 
-    [Header("���� ����")]
-    public float defaultStunDuration = 2f;       // Bullet damage�� 0�� �� �⺻ ���� �ð�
+    [Header("상태 설정")]
+    public float defaultStunDuration = 2f;
 
-    [Header("����")]
-    public AudioSource sfxSource;        // ȿ���� ����� (���� ����)
-    public AudioClip chaseStartClip;     // �߰� ���� ȿ����
-    public AudioSource bgmSource;        // ���� BGM(AudioSource)
+    [Header("사운드")]
+    public AudioSource sfxSource;
+    public AudioClip chaseStartClip;
+    public AudioSource bgmSource;
 
     [Header("공격")]
-    [SerializeField] int attackDamage = 10;      // 공격력
-    [SerializeField] float attacksPerSec = 1.5f; // 공속(초당 공격 수)
-    [SerializeField] float attackRange = 1.2f;   // 공격 판정 거리(근접)
+    [SerializeField] int attackDamage = 10;
+    [SerializeField] float attacksPerSec = 1.5f;
+    [SerializeField] float attackRange = 1.2f;
 
-    // ���� ����
+    // 내부 변수
     State state = State.Patrol;
-    float nextAttackTime;                        // 내부 쿨다운
+    float nextAttackTime;
     float dirTimer;
     float loseSightTimer;
     float stunTimer;
-    Vector3 currentDir;      // ���� ���� ���� (��/��/��/��)
+    Vector3 currentDir;
     NavMeshAgent agent;
 
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+
+        // [추가됨] 만약 인스펙터에서 할당 안 했으면 자식에서 찾기 시도
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
         if (agent != null)
         {
             agent.speed = chaseSpeed;
             agent.stoppingDistance = Mathf.Max(0.05f, attackRange * 0.8f);
             attackRange = Mathf.Max(attackRange, agent.stoppingDistance);
-            agent.updateRotation = false; // ȸ���� �츮�� ����
+            agent.updateRotation = false;
         }
 
         PickRandomDirection();
@@ -76,10 +86,12 @@ public class MonsterAI : MonoBehaviour, IHittable
         }
     }
 
-    // --------- ���� ���� ---------
+    // --------- 순찰 상태 ---------
     void UpdatePatrol()
     {
-        // NavMeshAgent ���� �ܼ� �̵�
+        // [추가됨] 순찰 애니메이션 (걷기 ON, 뛰기 OFF)
+        SetMoveAnim(true, false);
+
         if (agent != null && agent.enabled)
             agent.enabled = false;
 
@@ -89,18 +101,15 @@ public class MonsterAI : MonoBehaviour, IHittable
             PickRandomDirection();
         }
 
-        // ������ �̵�
         transform.position += currentDir * patrolSpeed * Time.deltaTime;
         transform.forward = currentDir;
 
-        // �տ� �� ������ ���� ����
         if (Physics.Raycast(transform.position + Vector3.up * 0.5f, currentDir,
             wallCheckDistance, obstacleMask))
         {
             PickRandomDirection();
         }
 
-        // �÷��̾ �þ� �ȿ� ������ �߰� ����
         if (CanSeePlayer())
         {
             StartChase();
@@ -110,19 +119,17 @@ public class MonsterAI : MonoBehaviour, IHittable
     void PickRandomDirection()
     {
         dirTimer = directionChangeInterval;
-
-        // ��/��/��/�� �� �ϳ� ������
         int r = Random.Range(0, 4);
         switch (r)
         {
-            case 0: currentDir = Vector3.forward; break;   // +Z
-            case 1: currentDir = Vector3.back; break;   // -Z
-            case 2: currentDir = Vector3.right; break;   // +X
-            case 3: currentDir = Vector3.left; break;   // -X
+            case 0: currentDir = Vector3.forward; break;
+            case 1: currentDir = Vector3.back; break;
+            case 2: currentDir = Vector3.right; break;
+            case 3: currentDir = Vector3.left; break;
         }
     }
 
-    // --------- �߰� ���� ---------
+    // --------- 추격 상태 ---------
     void StartChase()
     {
         state = State.Chase;
@@ -134,17 +141,14 @@ public class MonsterAI : MonoBehaviour, IHittable
             agent.speed = chaseSpeed;
         }
 
-        // �߰� ���� ȿ����
         if (sfxSource != null && chaseStartClip != null)
-        {
             sfxSource.PlayOneShot(chaseStartClip);
-        }
 
-        // ���� BGM ����
         if (bgmSource != null && !bgmSource.isPlaying)
-        {
             bgmSource.Play();
-        }
+
+        // [추가됨] 추격 애니메이션 (걷기 OFF, 뛰기 ON) -> UpdateChase에서도 호출되지만 확실히 하기 위해
+        SetMoveAnim(false, true);
     }
 
     void StopChase()
@@ -152,19 +156,21 @@ public class MonsterAI : MonoBehaviour, IHittable
         state = State.Patrol;
         PickRandomDirection();
 
-        // BGM ����
         if (bgmSource != null && bgmSource.isPlaying)
-        {
             bgmSource.Stop();
-        }
 
-        // NavMeshAgent�� �������� �� ��
         if (agent != null && agent.enabled)
             agent.enabled = false;
+
+        // [추가됨] 추격 종료 시 순찰로 변경되므로 걷기 애니메이션
+        SetMoveAnim(true, false);
     }
 
     void UpdateChase()
     {
+        // [추가됨] 계속 뛰는 상태 유지
+        SetMoveAnim(false, true);
+
         if (player == null)
         {
             StopChase();
@@ -174,8 +180,6 @@ public class MonsterAI : MonoBehaviour, IHittable
         if (agent != null && agent.enabled)
         {
             agent.SetDestination(player.position);
-
-            // ���� �������� �� ������
             if (agent.desiredVelocity.sqrMagnitude > 0.1f)
             {
                 Vector3 dir = agent.desiredVelocity.normalized;
@@ -184,13 +188,11 @@ public class MonsterAI : MonoBehaviour, IHittable
         }
         else
         {
-            // NavMesh ���� ���: �׳� ���� �߰� (���� ���� �� ����)
             Vector3 dir = (player.position - transform.position).normalized;
             transform.position += dir * chaseSpeed * Time.deltaTime;
             transform.forward = dir;
         }
 
-        // �÷��̾ �� �� ������ Ÿ�̸� �ʱ�ȭ
         if (CanSeePlayer())
         {
             loseSightTimer = 0f;
@@ -203,42 +205,43 @@ public class MonsterAI : MonoBehaviour, IHittable
                 StopChase();
             }
         }
-        // ... 기존 추격 로직/시야 체크 아래에 붙이기 ...
 
-        // 플레이어와의 거리 계산
         Vector3 a = transform.position; a.y = 0f;
-        Vector3 b = player.position;    b.y = 0f;
+        Vector3 b = player.position; b.y = 0f;
         float distToPlayer = Vector3.Distance(a, b);
 
-        // 사거리 안 + 쿨다운 OK 이면 공격
         if (distToPlayer <= attackRange && Time.time >= nextAttackTime)
         {
             nextAttackTime = Time.time + 1f / Mathf.Max(0.01f, attacksPerSec);
             DoAttack();
         }
-
     }
 
-    // --------- ���� ���� ---------
+    // --------- 피격/스턴 상태 ---------
     void StartStun(float duration)
     {
         state = State.Stunned;
         stunTimer = duration;
 
-        // �߰� ���̾��ٸ� BGM�� ��
         if (bgmSource != null && bgmSource.isPlaying)
             bgmSource.Stop();
 
         if (agent != null && agent.enabled)
             agent.enabled = false;
+
+        // [추가됨] 스턴 상태에서는 움직임 애니메이션 멈춤
+        SetMoveAnim(false, false);
+
+        // [추가됨] 피격 애니메이션 재생 (Trigger)
+        if (animator != null) animator.SetTrigger(hashHit);
     }
 
     void UpdateStunned()
     {
+        // 스턴 중에는 움직임 없음 (Idle 상태가 됨)
         stunTimer -= Time.deltaTime;
         if (stunTimer <= 0f)
         {
-            // ���� Ǯ���� �ٽ� �þ� Ȯ���ؼ� �߰�/���� ����
             if (CanSeePlayer())
                 StartChase();
             else
@@ -249,86 +252,67 @@ public class MonsterAI : MonoBehaviour, IHittable
         }
     }
 
-    // --------- �þ� üũ (���簢�� + �� ����) ---------
-    bool CanSeePlayer()
+    // --------- 공격 함수 ---------
+    void DoAttack()
     {
-        if (player == null) return false;
-
-        // ���簢�� �þ� ���� �߽� (������ viewDistance/2)
-        Vector3 forward = transform.forward;
-        Vector3 center = transform.position + Vector3.up * 1f +
-                         forward * (viewDistance * 0.5f);
-
-        Vector3 halfExtents = new Vector3(viewBoxSize.x * 0.5f, 1f, viewDistance * 0.5f);
-
-        // Player ���̾ �⵵�� ���̾��ũ ���� ���°� ����
-        // ���⼱ ������: �÷��̾� �ݶ��̴��� �ִٰ� ����
-        Collider[] hits = Physics.OverlapBox(center, halfExtents, transform.rotation);
-        bool insideRect = false;
-        foreach (var col in hits)
-        {
-            if (col.transform == player)
-            {
-                insideRect = true;
-                break;
-            }
-        }
-        if (!insideRect) return false;
-
-        // ���簢�� �ȿ� �ִ���, ���� ������ ������ �� ���� �ɷ� ó��
-        Vector3 origin = transform.position + Vector3.up * 1f;
-        Vector3 toPlayer = (player.position + Vector3.up * 1f) - origin;
-        float dist = toPlayer.magnitude;
-
-        if (Physics.Raycast(origin, toPlayer.normalized, dist, obstacleMask))
-        {
-            // �߰��� ���� ���θ���
-            return false;
-        }
-
-        return true;
-    }
-
-    // �����Ϳ��� �þ� �ڽ� ���̰�
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.red;
-        Vector3 forward = transform.forward;
-        Vector3 center = transform.position + Vector3.up * 1f +
-                         forward * (viewDistance * 0.5f);
-        Vector3 size = new Vector3(viewBoxSize.x, 2f, viewDistance);
-        Gizmos.matrix = Matrix4x4.TRS(center, transform.rotation, Vector3.one);
-        Gizmos.DrawWireCube(Vector3.zero, size);
-    }
-
-    // --------- IHittable ���� (���� �� �ǰ�) ---------
-    public void TakeHit(float damage, Vector3 hitPoint, Vector3 hitNormal)
-    {
-        // ���⼭�� damage�� "���� �ð�"���� ����
-        float stunTime = damage > 0f ? damage : defaultStunDuration;
-        StartStun(stunTime);
-
-        // �ǰ� ����Ʈ�� �Ҹ� �ְ� ������ ���⼭ ó��
-        // ��: sfxSource.PlayOneShot(stunClip);
-    }
-
-        void DoAttack()
-    {
-         Debug.Log("[Enemy] DoAttack called");
-        // 정면을 플레이어로 향하게(선택)
+        Debug.Log("[Enemy] DoAttack called");
         Vector3 to = (player.position - transform.position);
         to.y = 0f;
         if (to.sqrMagnitude > 0.0001f)
             transform.forward = Vector3.Lerp(transform.forward, to.normalized, Time.deltaTime * 20f);
 
-        // 실제 데미지 적용
         var hp = player.GetComponentInParent<PlayerHealth>();
         if (hp != null)
             hp.TakeDamage(attackDamage);
 
-        // TODO: 공격 애니메이션/사운드/이펙트가 있다면 여기서 트리거
-        // animator.SetTrigger("Attack");
-        // sfxSource.PlayOneShot(attackClip);
+        // [추가됨] 공격 애니메이션 재생 (Trigger)
+        if (animator != null) animator.SetTrigger(hashAttack);
     }
 
+    // --------- 보조 함수 ---------
+
+    // [추가됨] 걷기/달리기 애니메이션 상태 설정 함수
+    void SetMoveAnim(bool isWalk, bool isRun)
+    {
+        if (animator == null) return;
+        animator.SetBool(hashWalk, isWalk);
+        animator.SetBool(hashRun, isRun);
+    }
+
+    // (기존 CanSeePlayer, OnDrawGizmosSelected 함수들은 그대로 유지)
+    bool CanSeePlayer()
+    {
+        if (player == null) return false;
+        Vector3 forward = transform.forward;
+        Vector3 center = transform.position + Vector3.up * 1f + forward * (viewDistance * 0.5f);
+        Vector3 halfExtents = new Vector3(viewBoxSize.x * 0.5f, 1f, viewDistance * 0.5f);
+        Collider[] hits = Physics.OverlapBox(center, halfExtents, transform.rotation);
+        bool insideRect = false;
+        foreach (var col in hits)
+        {
+            if (col.transform == player) { insideRect = true; break; }
+        }
+        if (!insideRect) return false;
+        Vector3 origin = transform.position + Vector3.up * 1f;
+        Vector3 toPlayer = (player.position + Vector3.up * 1f) - origin;
+        float dist = toPlayer.magnitude;
+        if (Physics.Raycast(origin, toPlayer.normalized, dist, obstacleMask)) return false;
+        return true;
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Vector3 forward = transform.forward;
+        Vector3 center = transform.position + Vector3.up * 1f + forward * (viewDistance * 0.5f);
+        Vector3 size = new Vector3(viewBoxSize.x, 2f, viewDistance);
+        Gizmos.matrix = Matrix4x4.TRS(center, transform.rotation, Vector3.one);
+        Gizmos.DrawWireCube(Vector3.zero, size);
+    }
+
+    public void TakeHit(float damage, Vector3 hitPoint, Vector3 hitNormal)
+    {
+        float stunTime = damage > 0f ? damage : defaultStunDuration;
+        StartStun(stunTime);
+    }
 }
