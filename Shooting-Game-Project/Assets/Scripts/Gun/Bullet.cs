@@ -1,50 +1,32 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody), typeof(Collider))]
-public class Bullet : MonoBehaviour
+public class BulletTracer : MonoBehaviour
 {
-    public float lifeTime = 3f;     // 자동 제거 시간
-    public float gravityScale = 0.1f; // 중력 약하게
-    public float damage = 1f;
+    private Vector3 targetPosition;
+    private float speed;
 
-    Rigidbody rb;
-
-    void Awake()
+    // Gun 스크립트에서 호출해줌
+    public void Init(Vector3 target, float moveSpeed)
     {
-        rb = GetComponent<Rigidbody>();
-        rb.useGravity = false;
+        targetPosition = target;
+        speed = moveSpeed;
 
-        // 관통 방지
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        // 목표 방향을 바라보게 회전
+        transform.LookAt(targetPosition);
 
-        // 튕김 방지
-        rb.constraints = RigidbodyConstraints.FreezeRotation;
-        //Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Bullet"),LayerMask.NameToLayer("Bullet"));
+        // 안전장치: 2초 뒤에는 무조건 삭제 (혹시 모를 잔여물 방지)
+        Destroy(gameObject, 2f);
     }
 
-    public void Setup(Vector3 dir, float speed, float dmg)
+    void Update()
     {
-        damage = dmg;
-        rb.linearVelocity = dir * speed;
-        Destroy(gameObject, lifeTime);
-    }
+        // 목표 지점까지 이동
+        transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
 
-    void FixedUpdate()
-    {
-        // 커스텀 중력
-        rb.AddForce(Physics.gravity * gravityScale, ForceMode.Acceleration);
-    }
-
-    void OnCollisionEnter(Collision col)
-    {
-        // IHittable만 피격
-        var hit = col.collider.GetComponent<IHittable>();
-        if (hit != null)
+        // 목표 지점에 거의 도달했으면 삭제
+        if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
         {
-            var contact = col.GetContact(0);
-            hit.TakeHit(damage, contact.point, contact.normal);
+            Destroy(gameObject);
         }
-
-        Destroy(gameObject);
     }
 }
