@@ -312,7 +312,10 @@ public class MonsterAI : MonoBehaviour, IHittable
 
     public void TakeHit(float damage, Vector3 hitPoint, Vector3 hitNormal)
     {
-        float stunTime = damage > 0f ? damage : defaultStunDuration;
-        StartStun(stunTime);
+        // [수정 전] 데미지가 곧 스턴 시간이었음
+        // float stunTime = damage > 0f ? damage : defaultStunDuration;
+
+        // [수정 후] 데미지와 상관없이, 인스펙터에서 설정한 'Default Stun Duration' 시간을 씀
+        StartStun(defaultStunDuration);
     }
 }

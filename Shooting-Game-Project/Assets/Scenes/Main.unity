@@ -1062,7 +1062,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 430986, guid: 2736bbc2f2c78a949957b0719c2992bd, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2.711
+      value: 3.073
       objectReference: {fileID: 0}
     - target: {fileID: 430986, guid: 2736bbc2f2c78a949957b0719c2992bd, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1397,19 +1397,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21e91937b50eef2458b86d80d6bf464a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Gun
-  bulletPrefab: {fileID: 9168683510133557551, guid: 67d3a53ac7a5329468890dde404b260d, type: 3}
   firePoint: {fileID: 1150430811}
+  lightningPrefab: {fileID: 0}
   muzzleFlashObject: {fileID: 448862184}
-  flashDuration: 0.1
-  shootSound: {fileID: 0}
+  effectDuration: 0.2
+  hitEffectPrefab: {fileID: 0}
   cam: {fileID: 1847552820}
   maxDist: 100
   hitMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  bulletSpeed: 100
   damage: 1
-  fireRate: 0.5
+  fireRate: 1
   maxAmmo: 10
 --- !u!114 &992639064
 MonoBehaviour:
