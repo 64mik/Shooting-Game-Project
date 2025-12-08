@@ -4,25 +4,24 @@ using System.Collections;
 
 public class Gun : MonoBehaviour
 {
-    [Header("발사 관련 설정")]
-    public GameObject bulletTrailPrefab; // (구 bulletPrefab) 날아가는 궤적 이펙트용 프리팹
-    public Transform firePoint;
-    public GameObject muzzleFlashObject;
-    public float flashDuration = 0.1f;
-    public ParticleSystem hitEffectPrefab; // (선택) 벽에 맞았을 때 튈 파티클
+    [Header("발사 이펙트 설정")]
+    public Transform firePoint;         // 총구 위치
+    public GameObject lightningPrefab;  // ⭐ 번개 프리팹 (여기에 에셋을 넣으세요)
+    public GameObject muzzleFlashObject; // 총구 번쩍임 (선택)
+    public float effectDuration = 0.2f; // 번개가 보여질 시간 (짧게 설정)
+
+    [Header("타격 이펙트 (선택)")]
+    public GameObject hitEffectPrefab;  // 벽에 맞았을 때 튀는 스파크
 
     [Header("카메라 참조")]
     [SerializeField] Camera cam;
     [SerializeField] float maxDist = 100f;
     [SerializeField] LayerMask hitMask = ~0;
 
-    [Header("총알 설정")]
-    public float damage = 1f;
+    [Header("데미지 설정")]
+    public float damage = 10f;
     public float fireRate = 0.5f;
     public int maxAmmo = 10;
-
-    // 히트스캔이지만 눈에 보이는 총알 속도 (궤적 이동 속도)
-    public float visualSpeed = 100f;
 
     private int currentAmmo;
     private int ammoLeft;
@@ -57,11 +56,7 @@ public class Gun : MonoBehaviour
 
     public void OnReload()
     {
-        if (ammoLeft <= 0)
-        {
-            Debug.Log("재장전 실패: 여분의 탄약이 없습니다!");
-            return;
-        }
+        if (ammoLeft <= 0) return;
         Reload();
     }
 
@@ -73,7 +68,6 @@ public class Gun : MonoBehaviour
 
     private void Shoot()
     {
-        if (firePoint == null) return;
         if (currentAmmo <= 0)
         {
             Debug.Log("총알 부족!");
@@ -81,55 +75,51 @@ public class Gun : MonoBehaviour
         }
 
         // -------------------------------
-        // [핵심] 히트스캔 로직 (즉시 판정)
+        // 1) 히트스캔 (레이 발사)
         // -------------------------------
         Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         RaycastHit hit;
-        Vector3 targetPoint; // 총알 궤적이 날아갈 목표 지점
+        Vector3 targetPoint;
 
-        // 1. 레이 발사
         if (Physics.Raycast(ray, out hit, maxDist, hitMask))
         {
             targetPoint = hit.point;
 
-            // 2. 맞은 대상에게 즉시 데미지 적용
+            // 데미지 주기
             var target = hit.collider.GetComponent<IHittable>();
             if (target != null)
-            {
                 target.TakeHit(damage, hit.point, hit.normal);
-            }
 
-            // (선택) 벽에 맞은 이펙트 생성
+            // 벽 타격 이펙트 (스파크)
             if (hitEffectPrefab != null)
-            {
                 Instantiate(hitEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
-            }
         }
         else
         {
-            // 허공을 쏜 경우
+            // 허공을 쏜 경우 (사거리 끝)
             targetPoint = ray.origin + ray.direction * maxDist;
         }
 
         // -------------------------------
-        // 3. 시각 효과 (궤적) 생성
+        // 2) 번개 이펙트 생성 (총알 X)
         // -------------------------------
-        if (bulletTrailPrefab != null)
+        if (lightningPrefab != null)
         {
-            // 총구에서 생성
-            GameObject trail = Instantiate(bulletTrailPrefab, firePoint.position, Quaternion.identity);
+            // 총구 위치에 번개 생성
+            GameObject lightning = Instantiate(lightningPrefab, firePoint.position, Quaternion.identity);
 
-            // 궤적 스크립트에 "여기까지 날아가라"고 명령
-            BulletTracer tracer = trail.GetComponent<BulletTracer>();
-            if (tracer != null)
-            {
-                tracer.Init(targetPoint, visualSpeed);
-            }
+            // 번개가 목표 지점을 바라보게 회전 (길게 뻗는 모델이라면 Z축이 정면이어야 함)
+            lightning.transform.LookAt(targetPoint);
+
+            // (선택) 만약 번개 길이를 코드로 늘려야 한다면 스케일 조절
+            // float distance = Vector3.Distance(firePoint.position, targetPoint);
+            // lightning.transform.localScale = new Vector3(1, 1, distance); 
+
+            // 짧은 시간 뒤 삭제
+            Destroy(lightning, effectDuration);
         }
 
-        // -------------------------------
-        // 4. 머즐플래시 (기존 동일)
-        // -------------------------------
+        // 3) 머즐 플래시 (총구 번쩍임)
         if (muzzleFlashObject != null)
         {
             if (disableFlashCoroutine != null) StopCoroutine(disableFlashCoroutine);
@@ -143,23 +133,22 @@ public class Gun : MonoBehaviour
 
     IEnumerator DisableFlashRoutine()
     {
-        yield return new WaitForSeconds(flashDuration);
+        yield return new WaitForSeconds(0.1f);
         muzzleFlashObject.SetActive(false);
     }
 
     public void Reload()
     {
+        // ... (기존 재장전 로직과 동일) ...
         if (ammoLeft >= maxAmmo)
         {
             if (currentAmmo != 0) ammoLeft += currentAmmo;
-            ammoLeft -= maxAmmo;
-            currentAmmo = maxAmmo;
+            ammoLeft -= maxAmmo; currentAmmo = maxAmmo;
         }
         else if (ammoLeft > 0)
         {
             if (currentAmmo != 0) ammoLeft += currentAmmo;
-            currentAmmo = ammoLeft;
-            ammoLeft = 0;
+            currentAmmo = ammoLeft; ammoLeft = 0;
         }
         UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);
     }
