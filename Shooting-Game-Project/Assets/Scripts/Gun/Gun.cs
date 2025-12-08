@@ -1,45 +1,57 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections; // 코루틴 사용을 위해 필요
 
 public class Gun : MonoBehaviour
 {
     [Header("발사 관련 설정")]
-    public GameObject bulletPrefab; //총알 프리팹
-    public Transform firePoint; //총구 위치
-    public ParticleSystem muzzleFlash;  //총 쏘면 번쩍이는 거, 나중에 추가 요함
-    public AudioClip shootSound;    //총 소리, 총 소리도 아직 없음
+    public GameObject bulletPrefab;
+    public Transform firePoint;
+
+    // [수정됨] 프리팹이 아니라, 이미 자식으로 달려있는 오브젝트를 참조합니다.
+    public GameObject muzzleFlashObject;
+
+    // [추가됨] 번개 이펙트가 켜져있는 시간 (너무 길면 어색함)
+    public float flashDuration = 0.1f;
+
+    public AudioClip shootSound;
 
     [Header("카메라 참조")]
     [SerializeField] Camera cam;
-    [SerializeField] float maxDist = 100f;      // 레이 최대 거리
-    [SerializeField] LayerMask hitMask = ~0;    // 맞출 레이어 (원하면 설정)
+    [SerializeField] float maxDist = 100f;
+    [SerializeField] LayerMask hitMask = ~0;
 
     [Header("총알 설정")]
-    public float bulletSpeed = 20f; //생성할 총알 속도
+    public float bulletSpeed = 20f;
     public float damage = 1f;
-    public float fireRate = 0.5f;   //총 발사 후 지연 시간
-    public int maxAmmo = 10;    //장전가능한 최대 장탄 수
-    private int currentAmmo; //현재 남은 총알
-    private int ammoLeft;    //여분 탄약 수
-    private float nextFireTime; //다음 총 발사 가능 시간
+    public float fireRate = 0.5f;
+    public int maxAmmo = 10;
+    private int currentAmmo;
+    private int ammoLeft;
+    private float nextFireTime;
 
+    // 이펙트 끄는 코루틴을 저장할 변수
+    private Coroutine disableFlashCoroutine;
 
     private void Awake()
     {
-        ammoLeft = maxAmmo; //초기 여분 탄약 수 설정
-        currentAmmo = maxAmmo; //기본적으로 최대 장탄 수로 세팅
+        ammoLeft = maxAmmo;
+        currentAmmo = maxAmmo;
         if (!cam) cam = Camera.main;
+
+        // 시작할 때 이펙트가 켜져있다면 확실하게 끕니다.
+        if (muzzleFlashObject != null)
+            muzzleFlashObject.SetActive(false);
     }
 
     void Start()
     {
-        // 추가: 시작하자마자 HUD를 10/10으로 세팅하고 힌트 끄기
         UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);
     }
 
     public void OnShoot()
     {
-        if (GameUI.Paused) return;   // ← 일시정지면 발사 안 함
+        if (GameUI.Paused) return;
 
         if (Time.time >= nextFireTime)
         {
@@ -50,18 +62,18 @@ public class Gun : MonoBehaviour
 
     public void OnReload()
     {
-        if(ammoLeft <= 0)
+        if (ammoLeft <= 0)
         {
             Debug.Log("재장전 실패: 여분의 탄약이 없습니다!");
             return;
         }
         Reload();
     }
-  
+
     public void AddAmmo(int amount)
     {
         ammoLeft += amount;
-        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 탄약 추가 후 갱신
+        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);
         Debug.Log($"탄약 추가: {amount}, 현재 소유 탄약: {ammoLeft}");
     }
 
@@ -80,84 +92,89 @@ public class Gun : MonoBehaviour
         }
 
         // -------------------------------
-        // 1) 화면 중앙에서 나가는 레이 계산
+        // 1) 레이 계산
         // -------------------------------
         Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-
         Vector3 targetPoint;
 
-        // 뭔가 맞으면 그 위치, 아니면 일정 거리 앞을 목표로 사용
         if (Physics.Raycast(ray, out RaycastHit hit, maxDist, hitMask))
             targetPoint = hit.point;
         else
             targetPoint = ray.origin + ray.direction * maxDist;
 
-        // firePoint에서 그 목표 지점을 향하는 방향
         Vector3 dir = (targetPoint - firePoint.position).normalized;
 
-        // 총구 방향도 맞추고 싶다면(선택 사항)
+        // firePoint 회전 (총알 나가는 방향 동기화)
         firePoint.rotation = Quaternion.LookRotation(dir);
 
         // -------------------------------
-        // 2) 총알 생성 + 방향/속도/데미지 세팅
+        // 2) 총알 생성
         // -------------------------------
         var go = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
-
         var bullet = go.GetComponent<Bullet>();
         if (bullet != null)
         {
-            // 🔴 예전: firePoint.forward
-            // bullet.Setup(firePoint.forward, bulletSpeed, damage);
-
-            // ✅ 수정: 카메라 중앙 기준으로 계산한 dir 사용
             bullet.Setup(dir, bulletSpeed, damage);
         }
-        
-        if (muzzleFlash != null) muzzleFlash.Play();
+
+        // -------------------------------
+        // [수정됨] 3) 번개 이펙트 활성화 (껏다 켜기)
+        // -------------------------------
+        if (muzzleFlashObject != null)
+        {
+            // 이미 켜져서 끄려고 대기중인 코루틴이 있다면 취소함 (연사 시 깜빡임 방지)
+            if (disableFlashCoroutine != null)
+                StopCoroutine(disableFlashCoroutine);
+
+            // 이펙트를 켬
+            muzzleFlashObject.SetActive(true);
+
+            // 파티클 시스템이라면 처음부터 다시 재생하도록 명령 (필요 시)
+            // ParticleSystem ps = muzzleFlashObject.GetComponent<ParticleSystem>();
+            // if(ps != null) ps.Play();
+
+            // 일정 시간 뒤에 끄는 예약 걸기
+            disableFlashCoroutine = StartCoroutine(DisableFlashRoutine());
+        }
 
         currentAmmo--;
-
-        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 발사 후 갱신
+        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);
         Debug.Log($"발사, 남은 탄: {currentAmmo}");
     }
 
+    // 지정된 시간 뒤에 이펙트를 끄는 함수
+    IEnumerator DisableFlashRoutine()
+    {
+        yield return new WaitForSeconds(flashDuration);
+        muzzleFlashObject.SetActive(false);
+    }
 
     public void Reload()
     {
-        if (ammoLeft >= maxAmmo)    //총알 수 여유있음
+        if (ammoLeft >= maxAmmo)
         {
-            if(currentAmmo != 0)
-            {
-                ammoLeft += currentAmmo; //현재 탄창에 남은 탄약을 여분 탄약에 다시 더함
-            }
+            if (currentAmmo != 0) ammoLeft += currentAmmo;
             ammoLeft -= maxAmmo;
             currentAmmo = maxAmmo;
-            UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 재장전 후 갱신
-            Debug.Log("재장전 완료!");
         }
-        else if(ammoLeft > 0)   //남은 탄약으로 재장전
+        else if (ammoLeft > 0)
         {
-            if (currentAmmo != 0)
-            {
-                ammoLeft += currentAmmo; //현재 탄창에 남은 탄약을 여분 탄약에 다시 더함
-            }
+            if (currentAmmo != 0) ammoLeft += currentAmmo;
             currentAmmo = ammoLeft;
             ammoLeft = 0;
-            UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 재장전 후 갱신
-            Debug.Log("탄약이 부족하여 남은 탄약으로 재장전 완료!");
         }
         else
         {
-            Debug.Log("재장전 실패: 여분의 탄약이 없습니다!");
+            Debug.Log("재장전 실패");
+            return;
         }
-        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);   // 발사 후 갱신
-        Debug.Log($"발사, 남은 탄: {currentAmmo}");
+        UIHUD.I?.SetAmmo(currentAmmo, ammoLeft);
+        Debug.Log("재장전 완료!");
     }
-
 
     public void OnAttack(InputValue value)
     {
-        if (GameUI.Paused) return;   // ← 일시정지면 입력 무시
+        if (GameUI.Paused) return;
         OnShoot();
     }
 }
