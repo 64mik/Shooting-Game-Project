@@ -1,17 +1,52 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Collider))]
 public class Door : MonoBehaviour
 {
-    public int keysRequired = 1; //¹®À» ¿­±â À§ÇØ ÇÊ¿äÇÑ ¿­¼è ¼ö
-    private void OnTriggerEnter(Collider collider)
+    [SerializeField] bool onlyPlayerTag = true;
+    [SerializeField] int keysRequired = 1;   // 0ì´ë©´ í‚¤ ë¶ˆí•„ìš”
+    bool done;
+
+    void OnTriggerEnter(Collider other)
+{
+    if (done) return;
+    if (onlyPlayerTag && !other.CompareTag("Player")) return;
+
+    if (keysRequired <= 0) {
+        Debug.Log("[Door] keysRequired=0 â†’ free pass");
+        Pass();
+        return;
+    }
+
+    if (GameManager.I == null) {
+        Debug.LogWarning("[Door] GameManager.I == null â†’ block");
+        return;
+    }
+
+    bool consumed = GameManager.I.UseKeys(keysRequired);
+    Debug.Log($"[Door] need={keysRequired}, have(after?)={GameManager.I.keysCollected}, consumed={consumed}");
+    if (!consumed) return;
+
+    Pass();
+}
+
+void Pass()
+{
+    done = true;
+    (GameUI.I ?? FindFirstObjectByType<GameUI>())?.ShowClear();
+}
+
+
+    void Reset()
     {
-        if (collider.CompareTag("Player"))
-        {
-            if (GameManager.I.UseKeys(keysRequired))
-            {
-                Destroy(gameObject);
-            }
-        }
-        Destroy(gameObject);
+        var col = GetComponent<Collider>();
+        if (col) col.isTrigger = true;
+
+        // CharacterControllerì™€ íŠ¸ë¦¬ê±° ì¶©ëŒ ë³´ì¥ì„ ìœ„í•´ ê¶Œì¥
+        if (!TryGetComponent<Rigidbody>(out var rb))
+            rb = gameObject.AddComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.useGravity  = false;
     }
 }
+
