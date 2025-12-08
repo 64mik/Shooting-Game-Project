@@ -116,3 +116,4 @@ InitTestScene*.unity*
 .vs/
 .idea/
 
+*.unity
