@@ -10,13 +10,16 @@ public class GameManager : MonoBehaviour
     [SerializeField] TMP_Text clearResultText;
 
     [Header("게임 설정")]
-    public int baseScore = 10000;         // 기본 점수
     public int perSecondPenalty = 1;      // 초당 감점
     public int hitPenalty = 200;          // 피격 시 감점
 
+    // 누적플레이 시간 점수
+    int score = 0;
+    public int Score => score;
+    public int PlaySeconds { get; private set; }   // 누적 플레이 시간(초)
+
     // 내부 변수
     float playTime = 0f;
-    int score = 0;
     public int keysCollected = 0;
     bool isPlaying = false; // 기본값을 false로 변경 (메뉴에서 시작하므로)
 
@@ -78,7 +81,7 @@ public class GameManager : MonoBehaviour
     {
         isPlaying = true;
         playTime = 0f;
-        score = baseScore;
+        score = 0;
         keysCollected = 0;
 
         // 결과창 끄기 (혹시 켜져있다면)
@@ -111,6 +114,13 @@ public class GameManager : MonoBehaviour
         // HUD 점수 표시
         UIHUD.I?.SetScore(score);
     }
+
+    public void AddScore(int add)
+    {
+        score += add;
+        UIHUD.I?.SetScore(score);   // 화면 갱신
+    }
+
 
     public void AddKey()
     {
@@ -145,5 +155,5 @@ public class GameManager : MonoBehaviour
     }
 
     public float PlayTime => playTime;
-    public int Score => score;
+   
 }

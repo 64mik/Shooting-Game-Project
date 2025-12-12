@@ -86,7 +86,14 @@ public class Gun : MonoBehaviour
         {
             // 적 타격
             var target = hit.collider.GetComponent<IHittable>();
-            if (target != null) target.TakeHit(damage, hit.point, hit.normal);
+            if (target != null)
+            {
+            target.TakeHit(damage, hit.point, hit.normal);
+
+            // ✅ 맞췄으니 +10점
+             GameManager.I?.AddScore(10);
+            }
+
 
             // 벽 타격 이펙트
             if (hitEffectPrefab != null)

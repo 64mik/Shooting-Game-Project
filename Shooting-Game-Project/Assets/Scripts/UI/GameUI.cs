@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using TMPro;
+
+
 
 public class GameUI : MonoBehaviour
 {
@@ -10,11 +13,22 @@ public class GameUI : MonoBehaviour
     {
         if (I != null && I != this) { Destroy(gameObject); return; }
         I = this;
+
+         var ph = FindFirstObjectByType<PlayerHealth>(FindObjectsInactive.Include);
+        if (ph != null){
+        ph.onDie.RemoveListener(ShowGameOver); // 중복 방지
+        ph.onDie.AddListener(ShowGameOver);    // ← 코드로 고정 연결
     }
+    }
+    
     [Header("Panels")]
     [SerializeField] GameObject pausePanel;
     [SerializeField] GameObject gameOverPanel;
     [SerializeField] GameObject clearPanel;
+
+    [Header("Clear UI Texts")]
+    [SerializeField] TMP_Text clearScoreText;   // ← ClearPanel 안의 Text
+    [SerializeField] TMP_Text clearTimeText;
     bool isPaused = false;
     bool isGameOver = false;
     bool isCleared = false;   
@@ -22,6 +36,8 @@ public class GameUI : MonoBehaviour
 
     // 다른 스크립트에서 참고할 일시정지 상태
     public static bool Paused { get; private set; }
+
+    
 
     void Start()
     {
@@ -64,6 +80,7 @@ public class GameUI : MonoBehaviour
     // ========================
     //   Pause 관련
     // ========================
+
     public void TogglePause()
     {
         // 게임오버 상태에서는 Pause 토글 안 함
@@ -104,6 +121,8 @@ public class GameUI : MonoBehaviour
     // ========================
     public void ShowGameOver()
     {
+        if (clearPanel)    clearPanel.SetActive(false);
+        Debug.Log("[GameUI] ShowGameOver called");
         isGameOver = true;
         isPaused = false;
         Paused = true;   // 게임오버 때도 입력 막기
@@ -139,6 +158,15 @@ public class GameUI : MonoBehaviour
 
     public void ShowClear(string nextSceneName = "")
     {
+        // 점수/시간 읽어서 표시
+        int score = GameManager.I?.Score ?? 0;
+        int sec   = GameManager.I?.PlaySeconds ?? Mathf.RoundToInt(Time.timeSinceLevelLoad);
+
+        if (clearScoreText) clearScoreText.text = $"Score: {score}";
+        if (clearTimeText)  clearTimeText.text  = $"Time: {sec/60:00}:{sec%60:00}";
+
+        // 패널 전환
+        if (gameOverPanel) gameOverPanel.SetActive(false);
         if (isCleared || isGameOver) return;
         isCleared = true;
         isPaused  = false;
@@ -150,6 +178,8 @@ public class GameUI : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
+
+    
 
     public void OnClickClearRetry()
     {
